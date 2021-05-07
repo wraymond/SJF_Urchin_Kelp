@@ -1,0 +1,63 @@
+---
+title: "Data_Exploration"
+author: "Wendel Raymond"
+date: "May 6, 2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+## Strait of Juan de Fuca Data Exploration
+This script will explore kelp cover and urchin data in the Strait of Juan de Fuca, Washington, USA. Goals are to look for general patterns and/or trends in kelp abundacne and sea urchin harvest.
+
+```{r libraries}
+library(tidyverse)
+
+theme_set(theme_classic())
+```
+
+### Data
+1) Compiled DNR kelp canopy data from 1989 to 2016 georeferenced to WDFW shellfish management areas.
+
+```{r}
+kelp <- read.csv("../Data/Kelp_FisheryManagementArea_1989_2016.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
+#### Data Management
+Check data types and preform some transformations.
+
+Structure
+```{r}
+## Check ##
+str(kelp)
+
+## Make character version of Map_Index ##
+kelp$Map_Index_ch <- as.character(kelp$Map_Index)
+```
+
+Transformations
+```{r}
+## Convert to Meters ##
+kelp$Shape_Length_m <- kelp$Shape_Length_ft * 0.3048
+kelp$Shape_Area_sqm <- kelp$Shape_Area_sqft * 0.092903
+
+## Convert to Hectare ##
+kelp$Shape_Area_hect <- kelp$Shape_Area_sqm * 0.0001
+```
+
+### Kelp Explore
+#### Summarize by Fishing Management Area
+
+Sum kelp area by yeah and FMA
+```{r}
+kelp.sum <- kelp %>% 
+  group_by(Year, MCRA) %>% 
+  summarise(Total_Kelp_hect = sum(Shape_Area_hect))
+```
+
+plots
+```{r}
+ggplot(kelp.sum) +
+  geom_line(aes(x = Year, y = Total_Kelp_hect)) +
+  facet_wrap(~MCRA)
+```
+
