@@ -58,7 +58,7 @@ kelp$area_hect <- kelp$area_sqm * 0.0001
 Sum kelp area by year and UID
 ```{r sum1, echo = FALSE, message = FALSE}
 kelp.sum <- kelp %>% 
-  group_by(year, UID) %>% 
+  group_by(UID, year) %>% 
   summarise(total_kelp_hect = sum(area_hect)) %>% 
   mutate(UID_yroyr_mean = mean(total_kelp_hect),
          UID_yroyr_sd = sd(total_kelp_hect),
