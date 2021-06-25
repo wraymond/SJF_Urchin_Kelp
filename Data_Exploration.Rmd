@@ -18,15 +18,23 @@ theme_set(theme_classic())
 ### Data
 1) Compiled DNR kelp canopy data from 1989 to 2016 georeferenced to WDFW shellfish management areas. Data were extracted from [Pfister et al 2018](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/1365-2745.12908) and from publically available data at the Washington Department of Fish and Wildlife.
 
-```{r data, echo = FALSE, results = "hide"}
-kelp <- read.csv("../Data/kelp_1989_2016_FMA_Ur.csv", header = TRUE, stringsAsFactors = FALSE)
+```{r data kelp, echo = FALSE, results = "hide"}
+kelp <- read.csv("../Data/kelp_1989_2016_CatchArea_Ur.csv", header = TRUE, stringsAsFactors = FALSE)
 ```
+
+2) WDFW Commercial Kelp harvest from 1973 to 2021. Harvest (pounds) by month, year, species, and catch area. Data were provided by WDFW.
+
+```{r data urchin, echo = FALSE, results = "hide"}
+urch <- read.csv("../Data/WDFW_RSU_GSU_pounds_annual_SJDF.csv", header = TRUE, stringsAsFactors = FALSE)
+```
+
 
 #### Data Management
 Check data types and preform some transformations.
 
+##### Kelp
 Structure
-```{r data mgmt, echo = FALSE, results = "hide", message = FALSE}
+```{r data mgmt kelp, echo = FALSE, results = "hide", message = FALSE}
 ## Check ##
 str(kelp)
 
@@ -34,7 +42,8 @@ str(kelp)
 kelp$map_index_ch <- as.character(kelp$map_index)
 
 ## Fill blank FMAs (MCRA) and UID with values ##
-kelp$MCRA <- ifelse(kelp$MCRA == " ", "U_MCRA", kelp$MCRA)
+kelp$MCRA_1 <- ifelse(kelp$MCRA_1 == " ", "U_MCRA", kelp$MCRA_1)
+kelp$MCRA_2 <- ifelse(kelp$MCRA_2 == " ", "U_MCRA", kelp$MCRA_2)
 kelp$UID <- ifelse(kelp$UID == " ", "U_UID", kelp$UID)
 ```
 
@@ -48,28 +57,53 @@ kelp$area_sqm <- kelp$area_sqft * 0.092903
 kelp$area_hect <- kelp$area_sqm * 0.0001
 ```
 
-### Kelp Explore
+##### WDFW Commercial Urchin
+
+Structure
+```{r data mgmt urch, echo = FALSE, results = "hide", message = FALSE}
+## Check ##
+str(urch)
+```
+
+Transformation
+```{r}
+## Convert to kg ##
+urch$catch_kg <- urch$catch_lbs / 2.205
+```
+
+###### Assign catch areas to urchin fishing areas
 
 #### WDFW Urchin Fishing Areas
 ![](https://wdfw.wa.gov/sites/default/files/styles/page_body_full_width/public/2019-02/urchin.jpg?itok=rIFNmA9l)
 
-#### Summarize by Urchin Fishing Area
+#### Summarize kelp by Urchin Catch Area
 
 Sum kelp area by year and UID
 ```{r sum1, echo = FALSE, message = FALSE}
 kelp.sum <- kelp %>% 
-  group_by(UID, year) %>% 
+  group_by(MCRA_2, year) %>% 
   summarise(total_kelp_hect = sum(area_hect)) %>% 
   mutate(UID_yroyr_mean = mean(total_kelp_hect),
          UID_yroyr_sd = sd(total_kelp_hect),
          total_kelp_anom = (total_kelp_hect - UID_yroyr_mean))
 ```
 
-Plot - Total kelp area by Urchin Fishing Area
+#### Summarize Urchin harvest by Catch Area
+where we have kelp data
+```{r sum2, echo = FALSE, message = FALSE}
+urch.sum <- urch %>% 
+  filter(catch_area == "23B" | catch_area == "23C" | catch_area == "23D" | catch_area == "29") %>% 
+  group_by(catch_area, year) %>%
+  summarise(total_urch_catch_kg = sum(catch_kg))
+```
+
+#### Plots
+
+Plot - Total kelp area by year by catch area
 ```{r p1.1, echo = FALSE, message = FALSE}
 ggplot(kelp.sum) +
   geom_line(aes(x = year, y = total_kelp_hect)) +
-  facet_wrap(~UID)
+  facet_wrap(~MCRA_2)
 ```
 
 Plot - Year over year anomaly of total kelp area by Urchin Fishing Area
@@ -80,7 +114,15 @@ ggplot(kelp.sum) +
   facet_wrap(~UID)
 ```
 
-#### Summarize by species and Urchin Fishing Area
+Plots - Total Urchin harvest by year and catch areas 
+```{r}
+ggplot(urch.sum) +
+  geom_line(aes(x = year, y = log(total_urch_catch_kg, base = 10))) +
+  facet_wrap(~catch_area)
+```
+
+
+### Summarize kelp by species and Urchin Fishing Area
 
 Sum kelp area by year, species, and UID
 ```{r sum2, echo = FALSE, message = FALSE}
@@ -99,3 +141,4 @@ ggplot(kelp.sp.sum) +
   facet_wrap(~UID)
 ```
 
+### Summarize urchins harvest by 
