@@ -45,6 +45,9 @@ kelp$map_index_ch <- as.character(kelp$map_index)
 kelp$MCRA_1 <- ifelse(kelp$MCRA_1 == " ", "U_MCRA", kelp$MCRA_1)
 kelp$MCRA_2 <- ifelse(kelp$MCRA_2 == " ", "U_MCRA", kelp$MCRA_2)
 kelp$UID <- ifelse(kelp$UID == " ", "U_UID", kelp$UID)
+
+## Toggle LPEX or not ##
+kelp$MCRA_2 <- ifelse(kelp$MCRA_2 == "LEX", "23C", kelp$MCRA_2)
 ```
 
 Transformations
@@ -71,8 +74,6 @@ Transformation
 urch$catch_kg <- urch$catch_lbs / 2.205
 ```
 
-###### Assign catch areas to urchin fishing areas
-
 #### WDFW Urchin Fishing Areas
 ![](https://wdfw.wa.gov/sites/default/files/styles/page_body_full_width/public/2019-02/urchin.jpg?itok=rIFNmA9l)
 
@@ -97,16 +98,44 @@ urch.sum <- urch %>%
   summarise(total_urch_catch_kg = sum(catch_kg))
 ```
 
+#### Assign catch areas to urchin fishing areas
+Merge kelp and urchin data based off catch area. Kelp data uses 'MCRA_2' and urcin data uses 'catch_area'. MErge with all because there are years X areas with kelp data and no urchin data and vise versa.
+```{r merge ur kelp, echo = FALSE, message = FALSE}
+dat <- merge(kelp.sum, urch.sum, by.x = c("MCRA_2", "year"), by.y = c("catch_area", "year"), all = TRUE)
+
+dat$total_urch_catch_kg[is.na(dat$total_urch_catch_kg)] <- 0
+```
+
 #### Plots
 
 Plot - Total kelp area by year by catch area
 ```{r p1.1, echo = FALSE, message = FALSE}
-ggplot(kelp.sum) +
+ggplot(dat) +
   geom_line(aes(x = year, y = total_kelp_hect)) +
   facet_wrap(~MCRA_2)
 ```
 
-Plot - Year over year anomaly of total kelp area by Urchin Fishing Area
+Plot - Total urchin harvest by year by catch area
+```{r p1.2, echo = FALSE, message = FALSE}
+ggplot(dat) +
+  geom_line(aes(x = year, y = log(total_urch_catch_kg))) +
+  facet_wrap(~MCRA_2)
+```
+
+Plot - Urchin harvest by kelp canopy by catch area. Only where sea urch harvest is > 0.
+```{r p1.3, = echo = FALSE, message= FALSE}
+ggplot(subset(dat, dat$total_urch_catch_kg > 0)) +
+  geom_point(aes(x = total_kelp_hect, y = log(total_urch_catch_kg), color = MCRA_2)) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, by = 3))
+```
+
+```{r p1.4, = echo = FALSE, message= FALSE}
+ggplot(dat) +
+  geom_point(aes(x = total_kelp_hect, y = log(total_urch_catch_kg))) +
+  facet_wrap(~MCRA_2)
+```
+
+Plot - Year over year anomaly of total kelp area by catch area
 ```{r p1.2, echo = FALSE, message = FALSE}
 ggplot(kelp.sum) +
   geom_line(aes(x = year, y = total_kelp_anom)) +
