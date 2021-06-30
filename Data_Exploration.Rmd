@@ -135,6 +135,10 @@ ggplot(dat) +
   facet_wrap(~MCRA_2)
 ```
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> cbc1e207ba1d6ca7b72a8bb81361539b690f289c
 Plot - Year over year anomaly of total kelp area by catch area
 ```{r p1.2, echo = FALSE, message = FALSE}
 ggplot(kelp.sum) +
